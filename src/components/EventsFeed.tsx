@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
+import EventDetails from "./EventDetails";
 import formatDate from "../utils/formatDate";
 import BookmarkButton from "./BookmarkButton";
 
@@ -31,9 +32,11 @@ type Event = {
   isFree: boolean;
   isKidFriendly: boolean;
   isSober: boolean;
+  location: string;
   vendor: {
     id: string;
     businessName: string;
+    averageRating?: number;
   };
 };
 
@@ -61,6 +64,9 @@ const EventsFeed: React.FC<Props> = ({ user }) => {
     isSober: false,
   });
   const [bookmarkedEventIds, setBookmarkedEventIds] = useState<string[]>([]);
+
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -132,6 +138,16 @@ const EventsFeed: React.FC<Props> = ({ user }) => {
 
   const toggleChip = (key: keyof typeof filters) => {
     setFilters((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleOpenModal = (event: Event) => {
+    setSelectedEvent(event);
+    setModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalOpen(false);
+    setSelectedEvent(null);
   };
 
   return (
@@ -262,30 +278,25 @@ const EventsFeed: React.FC<Props> = ({ user }) => {
                   {event.isKidFriendly && "· Kid-Friendly "}
                   {event.isSober && "· Sober"}
                 </Typography>
-
-                <Stack direction="row" spacing={1} mt={2} alignItems="center">
-                  <Button
-                    variant="outlined"
-                    onClick={() =>
-                      alert(`TODO: Show details for ${event.title}`)
-                    }
-                  >
-                    View Details
-                  </Button>
-                  {user && (
-                    <BookmarkButton
-                      userId={user.id}
-                      eventId={event.id}
-                      isBookmarked={bookmarkedEventIds.includes(event.id)}
-                      onToggle={handleToggleBookmark}
-                    />
-                  )}
-                </Stack>
+                <Button
+                  variant="outlined"
+                  sx={{ mt: 2 }}
+                  onClick={() => handleOpenModal(event)}
+                >
+                  View Details
+                </Button>
               </CardContent>
             </Card>
           ))}
         </Box>
       </Box>
+
+      {/* event details */}
+      <EventDetails
+        open={modalOpen}
+        onClose={handleCloseModal}
+        event={selectedEvent}
+      />
     </Box>
   );
 };
