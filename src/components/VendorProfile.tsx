@@ -85,9 +85,7 @@ const VendorProfile: React.FC<Props> = ({ user, getUser }) => {
     instagram: "",
     facebook: "",
   });
-  const [uploadedImage, setUploadedImage] = useState<UploadedImage | null>(
-    null
-  );
+  const [uploadedImage, setUploadedImage] = useState<UploadedImage | null>(null);
   // states used to toggle the modals
   const [openDelete, setOpenDelete] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
@@ -403,7 +401,7 @@ const VendorProfile: React.FC<Props> = ({ user, getUser }) => {
                 variant="contained"
                 fullWidth
                 component={Link}
-                to="/reviews"
+                to="vendor/reviews"
               >
                 Reviews
               </Button>
