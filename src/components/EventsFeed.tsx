@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
+import EventDetails from "./EventDetails";
 import formatDate from "../utils/formatDate";
 
 import {
@@ -30,9 +31,11 @@ type Event = {
   isFree: boolean;
   isKidFriendly: boolean;
   isSober: boolean;
+  location: string;
   vendor: {
     id: string;
     businessName: string;
+    averageRating?: number;
   };
 };
 
@@ -45,6 +48,9 @@ const EventsFeed: React.FC = () => {
     isKidFriendly: false,
     isSober: false,
   });
+
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -99,6 +105,16 @@ const EventsFeed: React.FC = () => {
     setFilters((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
+  const handleOpenModal = (event: Event) => {
+    setSelectedEvent(event);
+    setModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalOpen(false);
+    setSelectedEvent(null);
+  };
+
   return (
     <Box sx={{ mt: 4, px: 2 }}>
       {/* filters */}
@@ -146,7 +162,6 @@ const EventsFeed: React.FC = () => {
 
       {/* events */}
       <Box sx={{ position: "relative" }}>
-        {/* arrows */}
         <IconButton
           onClick={() => scroll("left")}
           sx={{
@@ -177,7 +192,6 @@ const EventsFeed: React.FC = () => {
           <ArrowForwardIosIcon />
         </IconButton>
 
-        {/* scroller */}
         <Box
           ref={scrollRef}
           sx={{
@@ -234,7 +248,7 @@ const EventsFeed: React.FC = () => {
                 <Button
                   variant="outlined"
                   sx={{ mt: 2 }}
-                  onClick={() => alert(`TODO: Show details for ${event.title}`)}
+                  onClick={() => handleOpenModal(event)}
                 >
                   View Details
                 </Button>
@@ -243,6 +257,13 @@ const EventsFeed: React.FC = () => {
           ))}
         </Box>
       </Box>
+
+      {/* event details */}
+      <EventDetails
+        open={modalOpen}
+        onClose={handleCloseModal}
+        event={selectedEvent}
+      />
     </Box>
   );
 };

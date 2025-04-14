@@ -3,7 +3,6 @@ import { Event as EventModel } from '../models/EventModel';
 import Vendor from '../models/Vendor';
 import Category from '../models/Category';
 import { Op } from 'sequelize';
-// import { messaging } from "./firebase/firebaseAdmin";
 import { messaging } from '../../src/firebase/firebaseAdmin';
 import User from '../models/User';
 
@@ -25,9 +24,7 @@ const ensureVendor = async (req: Request, res: Response, next: NextFunction) => 
   next();
 };
 
-//
 // 🌐 PUBLIC: GET /events (with optional filters)
-//
 router.get('/', async (req: Request, res: Response) => {
   try {
     const { category, isFree, isKidFriendly, isSober } = req.query;
@@ -54,7 +51,6 @@ router.get('/', async (req: Request, res: Response) => {
       ],
       order: [['startDate', 'ASC']],
     });
-
     res.json(events);
   } catch (err) {
     console.error('Public event feed error:', err);
@@ -62,9 +58,7 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
-//
 // GET /events/my-events (for the logged-in vendor)
-//
 router.get('/my-events', ensureVendor, async (req: Request, res: Response) => {
   const vendor = (req as any).vendor;
 
@@ -97,6 +91,7 @@ router.post('/', ensureVendor, async (req: Request, res: Response) => {
       startDate,
       endDate,
       venue_name,
+      location,
       latitude,
       longitude,
       isFree,
@@ -122,6 +117,7 @@ router.post('/', ensureVendor, async (req: Request, res: Response) => {
       startDate,
       endDate,
       venue_name,
+      location,
       latitude,
       longitude,
       isFree,
@@ -182,8 +178,6 @@ router.post('/', ensureVendor, async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to create event' });
   }
 });
-
-
 
 // router.post('/', ensureVendor, async (req: Request, res: Response) => {
 //   try {
@@ -270,10 +264,7 @@ router.put('/:id', ensureVendor, async (req: Request, res: Response) => {
   }
 });
 
-
-//
 // DELETE /events/:id
-//
 router.delete('/:id', ensureVendor, async (req: Request, res: Response) => {
   try {
     const vendor = (req as any).vendor;
@@ -292,9 +283,7 @@ router.delete('/:id', ensureVendor, async (req: Request, res: Response) => {
   }
 });
 
-//
 // GET /events/vendor/:vendorId
-//
 router.get('/vendor/:vendorId', async (req: Request, res: Response) => {
   try {
     const events = await EventModel.findAll({
@@ -308,7 +297,6 @@ router.get('/vendor/:vendorId', async (req: Request, res: Response) => {
         },
       ],
     });
-
     res.json(events);
   } catch (error) {
     console.error('Error fetching vendor events:', error);
