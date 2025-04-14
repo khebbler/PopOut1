@@ -26,6 +26,8 @@ import InstagramIcon from "@mui/icons-material/Instagram";
 import LanguageIcon from "@mui/icons-material/Language";
 import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
+import PersonAddAltIcon from "@mui/icons-material/PersonAddAlt";
+import PersonRemoveIcon from "@mui/icons-material/PersonRemove";
 
 import Navbar from "./NavBar";
 import formatDate from "../utils/formatDate";
@@ -129,6 +131,7 @@ const PublicVendorProfile: React.FC<Props> = ({ user }) => {
       if (!vendorId) return;
       
       try {
+<<<<<<< HEAD
         setLoading(true);
         const [eventsRes, vendorRes, imageRes] = await Promise.all([
           axios.get(`/api/events/vendor/${vendorId}`),
@@ -139,6 +142,13 @@ const PublicVendorProfile: React.FC<Props> = ({ user }) => {
         const sortedEvents = eventsRes.data.sort((a: Event, b: Event) => {
           return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
         });
+=======
+        const res = await axios.get(`/api/events/vendor/${vendorId}`);
+        const sortedEvents = res.data.sort(
+          (a: Event, b: Event) =>
+            new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
+        );
+>>>>>>> 9e3477a (UPDATE: Follow vendor button)
         setEvents(sortedEvents);
         setVendor(vendorRes.data);
 
@@ -165,8 +175,30 @@ const PublicVendorProfile: React.FC<Props> = ({ user }) => {
       }
     };
 
+<<<<<<< HEAD
     fetchData();
     fetchAverageRating();
+=======
+    const checkFollowStatus = async () => {
+      if (!user) return;
+      try {
+        const res = await axios.get(`/users/${user.id}/follows/${vendorId}`);
+        setIsFollowing(res.data.isFollowing);
+      } catch (err) {
+        console.error("Error checking follow status", err);
+        setIsFollowing(false);
+      }
+    };
+
+    if (vendorId) {
+      fetchVendorEvents();
+      fetchVendorInfo();
+      fetchVendorImage();
+      if (user) checkFollowStatus();
+      setLoading(true);
+      setTimeout(() => setLoading(false), 300);
+    }
+>>>>>>> 9e3477a (UPDATE: Follow vendor button)
   }, [vendorId, user]);
 
   const handleFollowToggle = () => {
@@ -176,9 +208,7 @@ const PublicVendorProfile: React.FC<Props> = ({ user }) => {
       : `/users/${user.id}/follow/${vendorId}`;
     axios
       .post(route)
-      .then(() => {
-        setIsFollowing(!isFollowing);
-      })
+      .then(() => setIsFollowing(!isFollowing))
       .catch((err) => console.error("Error toggling follow", err));
   };
 
@@ -242,8 +272,22 @@ const PublicVendorProfile: React.FC<Props> = ({ user }) => {
                 </IconButton>
               )}
               {user && (
-                <Button variant="outlined" onClick={handleFollowToggle}>
-                  {isFollowing ? "Unfollow" : "Follow"} Vendor
+                <Button
+                  variant="contained"
+                  startIcon={
+                    isFollowing ? <PersonRemoveIcon /> : <PersonAddAltIcon />
+                  }
+                  onClick={handleFollowToggle}
+                  sx={{
+                    backgroundColor: isFollowing ? "#e4e6eb" : "#1b74e4",
+                    color: isFollowing ? "#050505" : "#fff",
+                    textTransform: "none",
+                    "&:hover": {
+                      backgroundColor: isFollowing ? "#d8dadf" : "#1a6ed8",
+                    },
+                  }}
+                >
+                  {isFollowing ? "Following" : "Follow"}
                 </Button>
               )}
             </Stack>
@@ -333,11 +377,7 @@ const PublicVendorProfile: React.FC<Props> = ({ user }) => {
                       {event.description}
                     </Typography>
                     {event.Categories && event.Categories.length > 0 && (
-                      <Stack
-                        direction="row"
-                        spacing={1}
-                        sx={{ mt: 1, flexWrap: "wrap" }}
-                      >
+                      <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: "wrap" }}>
                         {event.Categories.map((cat) => (
                           <Chip
                             key={cat.name}
