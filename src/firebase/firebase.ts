@@ -12,8 +12,6 @@ const firebaseConfig = {
 };
 
 const firebaseApp = initializeApp(firebaseConfig);
-
-// exporting message instance
 const messaging = getMessaging(firebaseApp);
 
 export { firebaseApp, messaging };

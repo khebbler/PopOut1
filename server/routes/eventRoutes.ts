@@ -2,6 +2,10 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { Event as EventModel } from '../models/EventModel';
 import Vendor from '../models/Vendor';
 import Category from '../models/Category';
+import { Op } from 'sequelize';
+// import { messaging } from "./firebase/firebaseAdmin";
+import { messaging } from '../../src/firebase/firebaseAdmin';
+import User from '../models/User';
 
 const router = Router();
 
@@ -99,10 +103,9 @@ router.post('/', ensureVendor, async (req: Request, res: Response) => {
       isKidFriendly,
       isSober,
       image_url,
-      categories
+      categories,
     } = req.body;
 
-    // Required field validation
     if (!title || !startDate || !endDate || !venue_name || !latitude || !longitude) {
       return res.status(400).json({ error: 'Missing required event fields' });
     }
@@ -111,6 +114,7 @@ router.post('/', ensureVendor, async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'End date must be after start date' });
     }
 
+    // create event
     const event = await EventModel.create({
       vendor_id: vendor.id,
       title,
@@ -126,9 +130,50 @@ router.post('/', ensureVendor, async (req: Request, res: Response) => {
       image_url,
     });
 
+    // categories
     if (categories && Array.isArray(categories)) {
       const categoryInstances = await Category.findAll({ where: { name: categories } });
       await (event as any).setCategories(categoryInstances);
+    }
+
+    // followers fcm tokens
+    const vendorWithFollowers = await Vendor.findByPk(vendor.id, {
+      include: {
+        model: User,
+        as: 'followers',
+        where: { fcm_token: { [Op.ne]: null } },
+        required: false,
+        attributes: ['id', 'name', 'fcm_token'],
+      },
+    });
+
+    if (!vendorWithFollowers) {
+      return res.status(404).json({ error: 'Vendor not found' });
+    }
+
+    const followers = (vendorWithFollowers as any).followers;
+
+    if (followers && followers.length > 0) {
+      const notifications = followers.map((user: any) => ({
+        token: user.fcm_token,
+        notification: {
+          title: `${vendorWithFollowers.businessName} just posted a new event!`,
+          body: `${title} is happening soon - check it out in PopOut.`,
+        },
+      }));
+
+      const results = await Promise.allSettled(
+        notifications.map((msg: any) => messaging.send(msg))
+      );
+
+      const sentCount = results.filter((r: any) => r.status === 'fulfilled').length;
+      console.log(`EVENT CREATED ${sentCount} FOLLOWERS NOTIFIED.`);
+
+      results.forEach((r: any, i: number) => {
+        if (r.status === 'rejected') {
+          console.warn(`failed to notify user ${notifications[i].token}`, r.reason);
+        }
+      });
     }
 
     res.status(201).json(event);
@@ -137,6 +182,62 @@ router.post('/', ensureVendor, async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to create event' });
   }
 });
+
+
+
+// router.post('/', ensureVendor, async (req: Request, res: Response) => {
+//   try {
+//     const vendor = (req as any).vendor;
+//     const {
+//       title,
+//       description,
+//       startDate,
+//       endDate,
+//       venue_name,
+//       latitude,
+//       longitude,
+//       isFree,
+//       isKidFriendly,
+//       isSober,
+//       image_url,
+//       categories
+//     } = req.body;
+
+//     // Required field validation
+//     if (!title || !startDate || !endDate || !venue_name || !latitude || !longitude) {
+//       return res.status(400).json({ error: 'Missing required event fields' });
+//     }
+
+//     if (new Date(endDate) <= new Date(startDate)) {
+//       return res.status(400).json({ error: 'End date must be after start date' });
+//     }
+
+//     const event = await EventModel.create({
+//       vendor_id: vendor.id,
+//       title,
+//       description,
+//       startDate,
+//       endDate,
+//       venue_name,
+//       latitude,
+//       longitude,
+//       isFree,
+//       isKidFriendly,
+//       isSober,
+//       image_url,
+//     });
+
+//     if (categories && Array.isArray(categories)) {
+//       const categoryInstances = await Category.findAll({ where: { name: categories } });
+//       await (event as any).setCategories(categoryInstances);
+//     }
+
+//     res.status(201).json(event);
+//   } catch (error) {
+//     console.error('Error creating event:', error);
+//     res.status(500).json({ error: 'Failed to create event' });
+//   }
+// });
 
 router.put('/:id', ensureVendor, async (req: Request, res: Response) => {
   try {
