@@ -167,15 +167,22 @@ const PublicVendorProfile: React.FC<Props> = ({ user }) => {
   };
 
   const handleFollowToggle = async () => {
+    console.log("follow unfollow clicked");
     if (!user) return;
+
     const route = isFollowing
-      ? `/users/${user.id}/unfollow/${vendorId}`
-      : `/users/${user.id}/follow/${vendorId}`;
+      ? `/api/users/${user.id}/unfollow/${vendorId}`
+      : `/api/users/${user.id}/follow/${vendorId}`;
+
+    console.log("req", route);
+
     try {
-      await axios.post(route);
+      const response = await axios.post(route);
+      console.log("res", response.data);
+
       setIsFollowing(!isFollowing);
-    } catch (err) {
-      console.error("Error toggling follow", err);
+    } catch (err: any) {
+      console.error("err toggle follow", err?.response?.data || err.message);
     }
   };
 
@@ -187,7 +194,7 @@ const PublicVendorProfile: React.FC<Props> = ({ user }) => {
     fetchData();
     if (user) {
       axios
-        .get(`/users/${user.id}/follows/${vendorId}`)
+        .get(`/api/users/${user.id}/follows/${vendorId}`)
         .then((res) => setIsFollowing(res.data.isFollowing))
         .catch(() => setIsFollowing(false));
     }
