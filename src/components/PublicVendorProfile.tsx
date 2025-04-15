@@ -100,8 +100,41 @@ const PublicVendorProfile: React.FC<Props> = ({ user }) => {
 
   const fetchReviews = async () => {
     try {
-      const res = await axios.get(`/vendors/${vendorId}/reviews`);
-      setReviews(res.data);
+      const [vendorRes, imageRes, eventRes, ratingRes] = await Promise.all([
+        axios.get(`/api/vendor/public/${vendorId}`),
+        axios.get(`/api/images/vendorId/${vendorId}`),
+        axios.get(`/api/events/vendor/${vendorId}`),
+        axios.get(`/vendors/${vendorId}/average-rating`),
+      ]);
+
+      const vendorData = vendorRes.data;
+      const vendorWithId = { ...vendorData, id: vendorId };
+
+      setVendor(vendorWithId);
+
+      const eventsWithVendor = eventRes.data.map((e: Event) => ({
+        ...e,
+        vendor: vendorWithId,
+      }));
+
+      const sorted = eventsWithVendor.sort(
+        (a, b) =>
+          new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
+      );
+
+      setEvents(sorted);
+
+      if (imageRes.data?.length > 0) {
+        setUploadedImage(imageRes.data[0].referenceURL);
+      }
+
+      const avg = parseFloat(ratingRes.data.averageRating) || 0;
+      const count = parseInt(ratingRes.data.reviewCount, 10) || 0;
+      setAvgRating(avg);
+      setReviewCount(count);
+
+      const reviewRes = await axios.get(`/vendors/${vendorId}/reviews`);
+      setReviews(reviewRes.data);
     } catch (err) {
       console.error("Error fetching reviews:", err);
     }
@@ -186,12 +219,20 @@ const PublicVendorProfile: React.FC<Props> = ({ user }) => {
 
             <Stack direction="row" spacing={2} alignItems="center">
               {vendor.facebook && (
-                <IconButton component="a" href={vendor.facebook} target="_blank">
+                <IconButton
+                  component="a"
+                  href={vendor.facebook}
+                  target="_blank"
+                >
                   <FacebookIcon color="primary" />
                 </IconButton>
               )}
               {vendor.instagram && (
-                <IconButton component="a" href={vendor.instagram} target="_blank">
+                <IconButton
+                  component="a"
+                  href={vendor.instagram}
+                  target="_blank"
+                >
                   <InstagramIcon sx={{ color: "#d62976" }} />
                 </IconButton>
               )}
@@ -241,7 +282,9 @@ const PublicVendorProfile: React.FC<Props> = ({ user }) => {
         {loading ? (
           <CircularProgress />
         ) : filteredEvents.length === 0 ? (
-          <Typography>No {tabIndex === 0 ? "Upcoming" : "Past"} Popups</Typography>
+          <Typography>
+            No {tabIndex === 0 ? "Upcoming" : "Past"} Popups
+          </Typography>
         ) : (
           <Box sx={{ position: "relative", mt: 2 }}>
             <IconButton
@@ -305,9 +348,16 @@ const PublicVendorProfile: React.FC<Props> = ({ user }) => {
                     <Typography variant="body2" sx={{ mt: 1 }}>
                       {event.description}
                     </Typography>
-                    {event.Categories && event.Categories.length > 0 && (
-                      <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: "wrap" }}>
-                        {event.Categories.map((cat) => (
+                    {(event.Categories?.length ||
+                      event.isFree ||
+                      event.isKidFriendly ||
+                      event.isSober) && (
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        sx={{ mt: 1, flexWrap: "wrap" }}
+                      >
+                        {event.Categories?.map((cat) => (
                           <Chip
                             key={cat.name}
                             label={cat.name}
@@ -316,8 +366,48 @@ const PublicVendorProfile: React.FC<Props> = ({ user }) => {
                             sx={{ fontSize: "0.75rem" }}
                           />
                         ))}
+                        {event.isFree && (
+                          <Chip
+                            label="Free"
+                            size="small"
+                            sx={{ fontSize: "0.75rem" }}
+                          />
+                        )}
+                        {event.isKidFriendly && (
+                          <Chip
+                            label="Kid-Friendly"
+                            size="small"
+                            sx={{ fontSize: "0.75rem" }}
+                          />
+                        )}
+                        {event.isSober && (
+                          <Chip
+                            label="Sober"
+                            size="small"
+                            sx={{ fontSize: "0.75rem" }}
+                          />
+                        )}
                       </Stack>
                     )}
+                    <Button
+                      variant="contained"
+                      size="small"
+                      startIcon={<VisibilityIcon />}
+                      onClick={() => handleOpenModal(event)}
+                      sx={{
+                        mt: 2,
+                        borderRadius: 2,
+                        textTransform: "none",
+                        boxShadow: 1,
+                        backgroundColor: "#000",
+                        color: "#fff",
+                        "&:hover": {
+                          backgroundColor: "#333",
+                        },
+                      }}
+                    >
+                      Details
+                    </Button>
                   </CardContent>
                 </Card>
               ))}
