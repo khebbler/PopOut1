@@ -28,10 +28,12 @@ import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import PersonAddAltIcon from "@mui/icons-material/PersonAddAlt";
 import PersonRemoveIcon from "@mui/icons-material/PersonRemove";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 
 import Navbar from "./NavBar";
 import formatDate from "../utils/formatDate";
 import ReviewComponent from "./Review";
+import EventDetails from "./EventDetails";
 
 type Props = {
   user: {
@@ -49,10 +51,20 @@ type Event = {
   startDate: string;
   endDate: string;
   venue_name: string;
+  location: string;
+  isFree: boolean;
+  isKidFriendly: boolean;
+  isSober: boolean;
   Categories?: { name: string }[];
+  vendor: {
+    id: string;
+    businessName: string;
+    averageRating?: number;
+  };
 };
 
 type Vendor = {
+  id?: string;
   businessName: string;
   description: string;
   profilePicture?: string;
@@ -82,9 +94,11 @@ const PublicVendorProfile: React.FC<Props> = ({ user }) => {
   const [avgRating, setAvgRating] = useState<number>(0);
   const [reviewCount, setReviewCount] = useState<number>(0);
   const [reviews, setReviews] = useState<Review[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isFollowing, setIsFollowing] = useState<boolean>(false);
+  const [isFollowing, setIsFollowing] = useState(false);
   const [tabIndex, setTabIndex] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -98,7 +112,18 @@ const PublicVendorProfile: React.FC<Props> = ({ user }) => {
     }
   };
 
-  const fetchReviews = async () => {
+  const handleOpenModal = (event: Event) => {
+    setSelectedEvent(event);
+    setModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalOpen(false);
+    setSelectedEvent(null);
+  };
+
+  const fetchData = async () => {
+    if (!vendorId) return;
     try {
       const [vendorRes, imageRes, eventRes, ratingRes] = await Promise.all([
         axios.get(`/api/vendor/public/${vendorId}`),
@@ -136,7 +161,9 @@ const PublicVendorProfile: React.FC<Props> = ({ user }) => {
       const reviewRes = await axios.get(`/vendors/${vendorId}/reviews`);
       setReviews(reviewRes.data);
     } catch (err) {
-      console.error("Error fetching reviews:", err);
+      console.error("Error fetching data:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -184,6 +211,7 @@ const PublicVendorProfile: React.FC<Props> = ({ user }) => {
     <>
       <Navbar user={user} />
       <Box sx={{ p: 4 }}>
+        {/* VENDOR HEADER */}
         {vendor && (
           <Stack
             direction="row"
@@ -211,12 +239,11 @@ const PublicVendorProfile: React.FC<Props> = ({ user }) => {
                 <Stack direction="row" alignItems="center" spacing={1}>
                   <Rating value={avgRating} precision={0.1} readOnly />
                   <Typography variant="body2" color="text.secondary">
-                    ({reviewCount} {reviewCount === 1 ? 'review' : 'reviews'})
+                    ({reviewCount} {reviewCount === 1 ? "review" : "reviews"})
                   </Typography>
                 </Stack>
               </Box>
             </Stack>
-
             <Stack direction="row" spacing={2} alignItems="center">
               {vendor.facebook && (
                 <IconButton
@@ -264,12 +291,7 @@ const PublicVendorProfile: React.FC<Props> = ({ user }) => {
           </Stack>
         )}
 
-        {vendor?.description && (
-          <Typography variant="body1" sx={{ mb: 3 }}>
-            {vendor.description}
-          </Typography>
-        )}
-
+        {/* EVENT CARDS */}
         <Tabs
           value={tabIndex}
           onChange={(_, newValue) => setTabIndex(newValue)}
@@ -328,15 +350,7 @@ const PublicVendorProfile: React.FC<Props> = ({ user }) => {
               }}
             >
               {filteredEvents.map((event) => (
-                <Card
-                  key={event.id}
-                  sx={{
-                    minWidth: 300,
-                    maxWidth: 300,
-                    flex: "0 0 auto",
-                    boxShadow: 3,
-                  }}
-                >
+                <Card key={event.id} sx={{ minWidth: 300, boxShadow: 3 }}>
                   <CardContent>
                     <Typography variant="h6">{event.title}</Typography>
                     <Typography variant="body2" color="text.secondary">
@@ -415,46 +429,41 @@ const PublicVendorProfile: React.FC<Props> = ({ user }) => {
           </Box>
         )}
 
+        {/* REVIEWS */}
         <Box sx={{ mt: 4 }}>
           <Typography variant="h4" gutterBottom>
             Reviews ({reviewCount})
           </Typography>
-          
+
           {reviewCount > 0 && (
             <Box sx={{ mb: 4 }}>
-              <List sx={{ 
-                maxHeight: 300, 
-                overflow: 'auto',
-                border: '1px solid #eee',
-                borderRadius: 1,
-                p: 1
-              }}>
+              <List
+                sx={{
+                  maxHeight: 300,
+                  overflow: "auto",
+                  border: "1px solid #eee",
+                  borderRadius: 1,
+                  p: 1,
+                }}
+              >
                 {reviews.map((review) => (
                   <React.Fragment key={review.id}>
                     <ListItem alignItems="flex-start">
                       <ListItemAvatar>
-                        <Avatar 
-                          src={review.user?.profile_picture} 
-                          alt={review.user?.name || 'Anonymous'}
-                        />
+                        <Avatar src={review.user?.profile_picture} />
                       </ListItemAvatar>
                       <ListItemText
-                        primary={review.user?.name || 'Anonymous'}
+                        primary={review.user?.name || "Anonymous"}
                         secondary={
                           <>
-                            <Rating 
-                              value={review.rating} 
-                              precision={0.5} 
-                              readOnly 
+                            <Rating
+                              value={review.rating}
+                              precision={0.5}
+                              readOnly
                               size="small"
                             />
                             {review.comment && (
-                              <Typography
-                                component="span"
-                                variant="body2"
-                                color="text.primary"
-                                display="block"
-                              >
+                              <Typography variant="body2" display="block">
                                 {review.comment}
                               </Typography>
                             )}
@@ -478,19 +487,24 @@ const PublicVendorProfile: React.FC<Props> = ({ user }) => {
                 <ReviewComponent
                   vendorId={vendorId}
                   currentUserId={user.id}
-                  onReviewAdded={handleReviewAction}
-                  onReviewUpdated={handleReviewAction}
-                  onReviewDeleted={handleReviewAction}
+                  onReviewAdded={handleReviewUpdate}
+                  onReviewUpdated={handleReviewUpdate}
+                  onReviewDeleted={handleReviewUpdate}
                 />
               ) : (
-                <Typography variant="body1">
-                  Please sign in to add your review.
-                </Typography>
+                <Typography>Please sign in to add your review.</Typography>
               )}
             </>
           )}
         </Box>
       </Box>
+
+      {/* MODAL */}
+      <EventDetails
+        open={modalOpen}
+        onClose={handleCloseModal}
+        event={selectedEvent}
+      />
     </>
   );
 };
