@@ -144,3 +144,6 @@ public/uploadedImages/vendorImages/*
 # backups
 server/routes/imageBackup.ts
 src/components/backupImgUp.tsx
+
+# google cloud credentials
+service-account-key.json
