@@ -180,7 +180,7 @@ const PublicVendorProfile: React.FC<Props> = ({ user }) => {
   };
 
   const handleReviewUpdate = () => {
-    fetchData(); // re-fetch reviews and average rating
+    fetchData();
   };
 
   useEffect(() => {

@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import axios from "axios";
+import { onMessageListener } from "../firebase/onMessageListener";
+import EventsFeed from "./EventsFeed";
 import {
   AppBar,
   Toolbar,
@@ -16,9 +19,8 @@ import {
   CardContent,
 } from "@mui/material";
 import NotificationsIcon from "@mui/icons-material/Notifications";
-import EventsFeed from "./EventsFeed";
-import { onMessageListener } from "../firebase/onMessageListener";
-import axios from "axios";
+import LogoutIcon from "@mui/icons-material/Logout";
+import Tooltip from "@mui/material/Tooltip";
 
 type User = {
   id: string;
@@ -94,7 +96,9 @@ const Home: React.FC<Props> = ({ user, vendors, captcha, setCaptcha }) => {
         const spotlightWithRatings = await Promise.all(
           spotlightData.map(async (vendor: any) => {
             try {
-              const ratingRes = await axios.get(`/vendors/${vendor.id}/average-rating`);
+              const ratingRes = await axios.get(
+                `/vendors/${vendor.id}/average-rating`
+              );
               // Expecting { averageRating: number, reviewCount: number } from this endpoint.
               const avg = parseFloat(ratingRes.data.averageRating);
               return {
@@ -102,7 +106,10 @@ const Home: React.FC<Props> = ({ user, vendors, captcha, setCaptcha }) => {
                 averageRating: !isNaN(avg) ? avg : 0,
               };
             } catch (error) {
-              console.error(`Error fetching rating for vendor ${vendor.id}:`, error);
+              console.error(
+                `Error fetching rating for vendor ${vendor.id}:`,
+                error
+              );
               return {
                 ...vendor,
                 averageRating: 0,
@@ -173,7 +180,12 @@ const Home: React.FC<Props> = ({ user, vendors, captcha, setCaptcha }) => {
               PopOut
             </Typography>
             {user && (
-              <Button component={Link} to="/map" variant="outlined" size="small">
+              <Button
+                component={Link}
+                to="/map"
+                variant="outlined"
+                size="small"
+              >
                 View Map
               </Button>
             )}
@@ -188,9 +200,11 @@ const Home: React.FC<Props> = ({ user, vendors, captcha, setCaptcha }) => {
               <IconButton component={Link} to="/userprofile">
                 <Avatar src={user.profile_picture} alt={user.name} />
               </IconButton>
-              <Button variant="outlined" href="/auth/logout" color="error">
-                Logout
-              </Button>
+              <Tooltip title="Logout">
+                <IconButton href="/auth/logout" color="error" sx={{ ml: 1 }}>
+                  <LogoutIcon />
+                </IconButton>
+              </Tooltip>
             </Stack>
           ) : (
             <Button variant="contained" href="/auth/google">
