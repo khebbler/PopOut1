@@ -3,6 +3,7 @@ import axios from "axios";
 import { Link } from "react-router-dom";
 import EventDetails from "./EventDetails";
 import formatDate from "../utils/formatDate";
+import BookmarkButton from "./BookmarkButton";
 
 import {
   Box,
@@ -40,7 +41,21 @@ type Event = {
   };
 };
 
-const EventsFeed: React.FC = () => {
+type Category = {
+  id: number;
+  name: string;
+};
+
+type User = {
+  id: string;
+  bookmarkedEvents?: Event[];
+};
+
+type Props = {
+  user: User | null;
+};
+
+const EventsFeed: React.FC<Props> = ({ user }) => {
   const [events, setEvents] = useState<Event[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [filters, setFilters] = useState({
@@ -49,6 +64,7 @@ const EventsFeed: React.FC = () => {
     isKidFriendly: false,
     isSober: false,
   });
+  const [bookmarkedEventIds, setBookmarkedEventIds] = useState<string[]>([]);
 
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -57,7 +73,7 @@ const EventsFeed: React.FC = () => {
 
   const fetchCategories = async () => {
     const res = await axios.get("/api/categories");
-    setCategories(res.data.map((cat: any) => cat.name));
+    setCategories(res.data.map((cat: Category) => cat.name));
   };
 
   const fetchEvents = useCallback(async () => {
@@ -84,6 +100,21 @@ const EventsFeed: React.FC = () => {
     }
   }, [filters]);
 
+  const fetchBookmarkedEventIds = async () => {
+    if (!user) return;
+    try {
+      const res = await axios.get(`/api/users/${user.id}/bookmarked-events`);
+      const bookmarkedIds = res.data.map((event: Event) => event.id);
+      setBookmarkedEventIds(bookmarkedIds);
+    } catch (err) {
+      console.error("Failed to fetch bookmarked event IDs:", err);
+    }
+  };
+
+  const handleToggleBookmark = async () => {
+    await fetchBookmarkedEventIds();
+  };
+
   useEffect(() => {
     fetchCategories();
   }, []);
@@ -91,6 +122,10 @@ const EventsFeed: React.FC = () => {
   useEffect(() => {
     fetchEvents();
   }, [fetchEvents]);
+
+  useEffect(() => {
+    fetchBookmarkedEventIds();
+  }, [user]);
 
   const scroll = (dir: "left" | "right") => {
     const scrollAmount = 320;
@@ -118,7 +153,6 @@ const EventsFeed: React.FC = () => {
 
   return (
     <Box sx={{ mt: 4, px: 2 }}>
-      {/* filters */}
       <Stack spacing={2} direction="row" flexWrap="wrap" mb={4}>
         <FormControl sx={{ minWidth: 160 }} size="small">
           <InputLabel>Category</InputLabel>
@@ -161,7 +195,6 @@ const EventsFeed: React.FC = () => {
         />
       </Stack>
 
-      {/* events */}
       <Box sx={{ position: "relative" }}>
         <IconButton
           onClick={() => scroll("left")}

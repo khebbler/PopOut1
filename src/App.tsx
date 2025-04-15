@@ -41,9 +41,19 @@ type Vendor = {
   updatedAt: any;
 };
 
+type Captcha = {
+  beatCaptcha: boolean;
+  wantsToBeVendor: boolean;
+};
+
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [vendors, setVendors] = useState<Vendor[] | null>(null);
+
+  const [captcha, setCaptcha] = useState<Captcha>({
+    beatCaptcha: false,
+    wantsToBeVendor: false,
+  });
 
   const getUser = async () => {
     try {
@@ -60,7 +70,6 @@ const App: React.FC = () => {
   useEffect(() => {
     registerServiceWorker();
 
-    // get current user
     fetch("/auth/me", {
       credentials: "include",
     })
@@ -72,10 +81,9 @@ const App: React.FC = () => {
         if (data && data.id) setUser(data);
       })
       .catch((err) => {
-        // console.error(err);
+        console.error("Error fetching user:", err);
       });
 
-    // Get all vendor records
     fetch("/vendor/all")
       .then((res) => {
         if (!res.ok) throw new Error("err fetching vendors");
@@ -86,7 +94,7 @@ const App: React.FC = () => {
         if (data) setVendors(data);
       })
       .catch((err) => {
-        // console.error(err);
+        console.error("Error fetching vendors:", err);
       });
   }, []);
 
@@ -100,18 +108,18 @@ const App: React.FC = () => {
     <>
       <NotificationListener />
       <Routes>
-        <Route path="/" element={<Home user={user} vendors={vendors} />} />
+        <Route path="/" element={<Home user={user} vendors={vendors} captcha={captcha} setCaptcha={setCaptcha} />} />
         <Route path="/map" element={<Map user={user} />} />
         <Route path="/userprofile" element={<UserProfile user={user} />} />
         <Route path="/edit-profile" element={<EditProfile user={user} />} />
         <Route path="/vendorprofile" element={<VendorProfile user={user} getUser={getUser} />} />
-        <Route path="/vendor-signup" element={<VendorSignupForm user={user} getUser={getUser} />} />
+        <Route path="/vendor-signup" element={<VendorSignupForm user={user} getUser={getUser} captcha={captcha} setCaptcha={setCaptcha} />} />
         <Route path="/preferences" element={<Preferences setUser={setUser} />} />
         <Route path="/create-event" element={<CreateEvent />} />
         <Route path="/edit-event/:id" element={<EditEvent />} />
         <Route path="/active-events" element={<ActiveEvents user={user} />} />
         <Route path="/events" element={<EventsFeed />} />
-        <Route path="/game" element={<GameApp />} />
+        <Route path="/game" element={<GameApp captcha={captcha} setCaptcha={setCaptcha} />} />
         <Route path="/vendor-spotlight" element={<TopVendorSpotlight />} />
         <Route path="/vendor/:vendorId" element={<PublicVendorProfile user={user} />} />
       </Routes>

@@ -12,10 +12,13 @@ import {
   IconButton,
   Popover,
   Badge,
+  Card,
+  CardContent,
 } from "@mui/material";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import EventsFeed from "./EventsFeed";
-import { onMessageListener } from '../firebase/onMessageListener';
+import { onMessageListener } from "../firebase/onMessageListener";
+import axios from "axios";
 
 type User = {
   id: string;
@@ -39,22 +42,85 @@ type Vendors = {
   updatedAt: any;
 }[];
 
+type Captcha = {
+  beatCaptcha: boolean;
+  wantsToBeVendor: boolean;
+};
+
+type SpotlightVendor = {
+  id: string;
+  businessName: string;
+  description: string;
+  averageRating: number;
+};
+
 type Props = {
   user: User | null;
   vendors: Vendors | null;
+  captcha: Captcha;
+  setCaptcha: Function;
 };
 
-const Home: React.FC<Props> = ({ user, vendors }) => {
+const Home: React.FC<Props> = ({ user, vendors, captcha, setCaptcha }) => {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [spotlight, setSpotlight] = useState<SpotlightVendor[]>([]);
 
   useEffect(() => {
     onMessageListener().then((payload: any) => {
       setNotifications((prev) => [payload.notification, ...prev]);
       setUnreadCount((prev) => prev + 1);
     });
-  }, []);
+
+    // create an interval to call changeColorInd every half second
+    const interval = setInterval(changeColorInd, 500);
+
+    // set captcha's "wantsToBeVendor" flag to false
+    setCaptcha((prev: Captcha) => ({
+      beatCaptcha: prev.beatCaptcha,
+      wantsToBeVendor: false,
+    }));
+
+    // Fetch vendor spotlight data from /vendors/spotlight/top3
+    const fetchSpotlight = async () => {
+      try {
+        // First get spotlight vendors from the spotlight endpoint.
+        const res = await axios.get("/vendors/spotlight/top3", {
+          withCredentials: true,
+        });
+        const spotlightData = Array.isArray(res.data) ? res.data : [];
+        // For each vendor, fetch its average rating from the same endpoint used in PublicVendorProfile.
+        const spotlightWithRatings = await Promise.all(
+          spotlightData.map(async (vendor: any) => {
+            try {
+              const ratingRes = await axios.get(`/vendors/${vendor.id}/average-rating`);
+              // Expecting { averageRating: number, reviewCount: number } from this endpoint.
+              const avg = parseFloat(ratingRes.data.averageRating);
+              return {
+                ...vendor,
+                averageRating: !isNaN(avg) ? avg : 0,
+              };
+            } catch (error) {
+              console.error(`Error fetching rating for vendor ${vendor.id}:`, error);
+              return {
+                ...vendor,
+                averageRating: 0,
+              };
+            }
+          })
+        );
+        setSpotlight(spotlightWithRatings);
+      } catch (error) {
+        console.error("Error fetching vendor spotlight:", error);
+      }
+    };
+    fetchSpotlight();
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [setCaptcha]);
 
   const handleBellClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -67,38 +133,31 @@ const Home: React.FC<Props> = ({ user, vendors }) => {
 
   const open = Boolean(anchorEl);
 
+  // Array of colors for game button
+  const colorArray = [
+    "red",
+    "orange",
+    "darkgoldenrod",
+    "green",
+    "blue",
+    "darkblue",
+    "violet",
+    "purple",
+    "maroon",
+  ];
 
-
-
-
-  // create array of colors to loop through
-  const colorArray = ["red", "orange", "yellow", "green", "cyan", "blue", "violet", "purple", "maroon"];
-
-  // create index in state for current color for game button
   const [gameButtonColorInd, setGameButtonColorInd] = useState(0);
-
-  // set interval on first render
-  useEffect(() => {
-    // call changeColorInd every half second
-      setInterval(changeColorInd, 500);
-    }, []);
-  
-    // set the game button color index in state to the next index in the color array
-    const changeColorInd = () => {
-      // console.log("tug");
-      setGameButtonColorInd(prev => {
-        prev++;
-        // reset index to 0 if the game button color index goes past the last color index in the color array
-        if (prev >= colorArray.length) {
-          return 0;
-        }
-        return prev;
-      })
-    }
+  const changeColorInd = () => {
+    setGameButtonColorInd((prev) => {
+      let newIndex = prev + 1;
+      if (newIndex >= colorArray.length) newIndex = 0;
+      return newIndex;
+    });
+  };
 
   return (
     <Box>
-      {/* navbar */}
+      {/* Navbar */}
       <AppBar position="static" sx={{ bgcolor: "#fff", color: "#000" }}>
         <Toolbar
           sx={{
@@ -113,34 +172,22 @@ const Home: React.FC<Props> = ({ user, vendors }) => {
             <Typography variant="h5" fontWeight="bold">
               PopOut
             </Typography>
-
             {user && (
-              <Button
-                component={Link}
-                to="/map"
-                variant="outlined"
-                size="small"
-              >
+              <Button component={Link} to="/map" variant="outlined" size="small">
                 View Map
               </Button>
             )}
           </Stack>
-
           {user ? (
             <Stack direction="row" spacing={2} alignItems="center">
-              {/* notification */}
               <IconButton onClick={handleBellClick}>
                 <Badge badgeContent={unreadCount} color="error">
                   <NotificationsIcon />
                 </Badge>
               </IconButton>
-
-              {/* avatar */}
               <IconButton component={Link} to="/userprofile">
                 <Avatar src={user.profile_picture} alt={user.name} />
               </IconButton>
-
-              {/* logout */}
               <Button variant="outlined" href="/auth/logout" color="error">
                 Logout
               </Button>
@@ -153,7 +200,7 @@ const Home: React.FC<Props> = ({ user, vendors }) => {
         </Toolbar>
       </AppBar>
 
-      {/* notification list */}
+      {/* Notification List */}
       <Popover
         open={open}
         anchorEl={anchorEl}
@@ -180,12 +227,10 @@ const Home: React.FC<Props> = ({ user, vendors }) => {
         </Box>
       </Popover>
 
-      {/* events */}
+      {/* Events Section */}
       <Container sx={{ mt: 4 }}>
-        <EventsFeed />
-
-        {/* become vendor */}
-        {(user && !user.is_vendor) && (
+        <EventsFeed user={null} />
+        {user && !user.is_vendor && (
           <Box mt={5} textAlign="center">
             <Button
               component={Link}
@@ -197,8 +242,6 @@ const Home: React.FC<Props> = ({ user, vendors }) => {
             </Button>
           </Box>
         )}
-
-        {/* play game */}
         {user && (
           <Box mt={5} textAlign="center">
             <Button
@@ -206,11 +249,39 @@ const Home: React.FC<Props> = ({ user, vendors }) => {
               to="/game"
               variant="outlined"
               size="large"
-              sx={{ color: colorArray[gameButtonColorInd], borderColor: colorArray[gameButtonColorInd] }}
+              sx={{
+                color: colorArray[gameButtonColorInd],
+                borderColor: colorArray[gameButtonColorInd],
+              }}
             >
-              Play Maze Game
+              Play Game
             </Button>
           </Box>
+        )}
+      </Container>
+
+      {/* Vendor Spotlight Section - MOVED TO BOTTOM */}
+      <Container sx={{ mt: 4, mb: 4 }}>
+        <Typography variant="h4" gutterBottom>
+          Vendor Spotlight
+        </Typography>
+        {spotlight.length > 0 ? (
+          spotlight.map((vendor) => (
+            <Card key={vendor.id} sx={{ mb: 2 }}>
+              <CardContent>
+                <Typography variant="h6">{vendor.businessName}</Typography>
+                <Typography variant="body2">
+                  Average Rating:{" "}
+                  {typeof vendor.averageRating === "number"
+                    ? Number(vendor.averageRating).toFixed(1)
+                    : "N/A"}
+                </Typography>
+                <Typography variant="body2">{vendor.description}</Typography>
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <Typography>No vendors in spotlight.</Typography>
         )}
       </Container>
     </Box>
