@@ -1,4 +1,7 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import formatDate from "../utils/formatDate";
+
 import {
   Modal,
   Box,
@@ -12,7 +15,7 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import BookmarkBorderIcon from "@mui/icons-material/BookmarkBorder";
 import BookmarkIcon from "@mui/icons-material/Bookmark";
-import formatDate from "../utils/formatDate";
+import PlaceIcon from "@mui/icons-material/Place";
 
 type Event = {
   id: string;
@@ -21,10 +24,12 @@ type Event = {
   endDate: string;
   venue_name: string;
   location: string;
+  description: string;
   isFree: boolean;
   isKidFriendly: boolean;
   isSober: boolean;
   vendor: {
+    id: any;
     businessName: string;
     averageRating?: number;
   };
@@ -61,29 +66,50 @@ const EventDetails: React.FC<Props> = ({ open, onClose, event }) => {
         <Stack
           direction="row"
           justifyContent="space-between"
-          alignItems="center"
+          alignItems="flex-start"
         >
-          <Typography variant="h6">{event.title}</Typography>
-          <IconButton onClick={onClose}>
+          <Box>
+            <Typography variant="h6" sx={{ lineHeight: 1 }}>
+              {event.title}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              by{" "}
+              <Link
+                to={`/vendor/${event.vendor.id}`}
+                style={{ textDecoration: "none", color: "#1976d2" }}
+              >
+                {event.vendor.businessName}
+              </Link>
+            </Typography>
+          </Box>
+          <IconButton onClick={onClose} sx={{ ml: 2 }}>
             <CloseIcon />
           </IconButton>
         </Stack>
 
         <Typography variant="body2" sx={{ mt: 1 }}>
-          <strong>Hosted by:</strong> {event.vendor.businessName}
-        </Typography>
-
-        <Typography variant="body2" sx={{ mt: 1 }}>
-          <strong>Venue:</strong> {event.venue_name}
-        </Typography>
-
-        <Typography variant="body2" sx={{ mt: 0.5 }}>
-          <strong>Address:</strong> {event.location.replace(/,\s*USA$/, "")}
-        </Typography>
-
-        <Typography variant="body2" sx={{ mt: 1 }}>
-          <strong>Date & Time:</strong>{" "}
           {formatDate(event.startDate, event.endDate)}
+        </Typography>
+
+        {event.description && (
+          <Typography variant="body2" sx={{ mt: 1, mb: 1 }}>
+            {event.description}
+          </Typography>
+        )}
+
+        <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
+          <PlaceIcon fontSize="small" />
+          <Typography variant="body2" fontWeight="bold">
+            {event.venue_name}
+          </Typography>
+        </Stack>
+
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ ml: 4, mt: 0.25 }}
+        >
+          {event.location.replace(/,\s*USA$/, "")}
         </Typography>
 
         {(event.Categories?.length ||
@@ -101,25 +127,17 @@ const EventDetails: React.FC<Props> = ({ open, onClose, event }) => {
               />
             ))}
             {event.isFree && (
-              <Chip
-                label="Free"
-                size="small"
-                sx={{ fontSize: "0.75rem", bgcolor: "#4caf50", color: "#fff" }}
-              />
+              <Chip label="Free" size="small" sx={{ fontSize: "0.75rem" }} />
             )}
             {event.isKidFriendly && (
               <Chip
                 label="Kid-Friendly"
                 size="small"
-                sx={{ fontSize: "0.75rem", bgcolor: "#ffeb3b", color: "#000" }}
+                sx={{ fontSize: "0.75rem" }}
               />
             )}
             {event.isSober && (
-              <Chip
-                label="Sober"
-                size="small"
-                sx={{ fontSize: "0.75rem", bgcolor: "#2196f3", color: "#fff" }}
-              />
+              <Chip label="Sober" size="small" sx={{ fontSize: "0.75rem" }} />
             )}
           </Stack>
         )}
