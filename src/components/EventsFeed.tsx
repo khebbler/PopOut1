@@ -20,6 +20,7 @@ import {
 } from "@mui/material";
 import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 
 type Event = {
   id: string;
@@ -246,9 +247,16 @@ const EventsFeed: React.FC = () => {
                   {event.isSober && "· Sober"}
                 </Typography>
                 <Button
-                  variant="outlined"
-                  sx={{ mt: 2 }}
+                  variant="contained"
+                  size="small"
+                  startIcon={<VisibilityIcon />}
                   onClick={() => handleOpenModal(event)}
+                  sx={{
+                    mt: 2,
+                    borderRadius: 2,
+                    textTransform: "none",
+                    boxShadow: 1,
+                  }}
                 >
                   View Details
                 </Button>
