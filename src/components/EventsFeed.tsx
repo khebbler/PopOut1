@@ -3,7 +3,7 @@ import axios from "axios";
 import { Link } from "react-router-dom";
 import EventDetails from "./EventDetails";
 import formatDate from "../utils/formatDate";
-import BookmarkButton from "./BookmarkButton";
+// import BookmarkButton from "./BookmarkButton";
 
 import {
   Box,
@@ -39,6 +39,7 @@ type Event = {
     businessName: string;
     averageRating?: number;
   };
+  Categories?: { name: string }[];
 };
 
 type Category = {
@@ -275,10 +276,52 @@ const EventsFeed: React.FC<Props> = ({ user }) => {
                   {formatDate(event.startDate, event.endDate)}
                 </Typography>
                 <Typography variant="body2" sx={{ mt: 1 }}>
-                  {event.isFree && "Free "}
-                  {event.isKidFriendly && "· Kid-Friendly "}
-                  {event.isSober && "· Sober"}
+                  {event.description}
                 </Typography>
+
+                {/* chips */}
+                {(event.Categories?.length ||
+                  event.isFree ||
+                  event.isKidFriendly ||
+                  event.isSober) && (
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    sx={{ mt: 1, flexWrap: "wrap" }}
+                  >
+                    {event.Categories?.map((cat) => (
+                      <Chip
+                        key={cat.name}
+                        label={cat.name}
+                        variant="outlined"
+                        size="small"
+                        sx={{ fontSize: "0.75rem" }}
+                      />
+                    ))}
+                    {event.isFree && (
+                      <Chip
+                        label="Free"
+                        size="small"
+                        sx={{ fontSize: "0.75rem" }}
+                      />
+                    )}
+                    {event.isKidFriendly && (
+                      <Chip
+                        label="Kid-Friendly"
+                        size="small"
+                        sx={{ fontSize: "0.75rem" }}
+                      />
+                    )}
+                    {event.isSober && (
+                      <Chip
+                        label="Sober"
+                        size="small"
+                        sx={{ fontSize: "0.75rem" }}
+                      />
+                    )}
+                  </Stack>
+                )}
+
                 <Button
                   variant="contained"
                   size="small"
@@ -289,9 +332,14 @@ const EventsFeed: React.FC<Props> = ({ user }) => {
                     borderRadius: 2,
                     textTransform: "none",
                     boxShadow: 1,
+                    backgroundColor: "#000",
+                    color: "#fff",
+                    "&:hover": {
+                      backgroundColor: "#333",
+                    },
                   }}
                 >
-                  View Details
+                  Details
                 </Button>
               </CardContent>
             </Card>

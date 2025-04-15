@@ -142,8 +142,9 @@ const PublicVendorProfile: React.FC<Props> = ({ user }) => {
         vendor: vendorWithId,
       }));
 
-      const sorted = eventsWithVendor.sort((a, b) =>
-        new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
+      const sorted = eventsWithVendor.sort(
+        (a, b) =>
+          new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
       );
 
       setEvents(sorted);
@@ -245,12 +246,20 @@ const PublicVendorProfile: React.FC<Props> = ({ user }) => {
             </Stack>
             <Stack direction="row" spacing={2} alignItems="center">
               {vendor.facebook && (
-                <IconButton component="a" href={vendor.facebook} target="_blank">
+                <IconButton
+                  component="a"
+                  href={vendor.facebook}
+                  target="_blank"
+                >
                   <FacebookIcon color="primary" />
                 </IconButton>
               )}
               {vendor.instagram && (
-                <IconButton component="a" href={vendor.instagram} target="_blank">
+                <IconButton
+                  component="a"
+                  href={vendor.instagram}
+                  target="_blank"
+                >
                   <InstagramIcon sx={{ color: "#d62976" }} />
                 </IconButton>
               )}
@@ -295,7 +304,9 @@ const PublicVendorProfile: React.FC<Props> = ({ user }) => {
         {loading ? (
           <CircularProgress />
         ) : filteredEvents.length === 0 ? (
-          <Typography>No {tabIndex === 0 ? "Upcoming" : "Past"} Popups</Typography>
+          <Typography>
+            No {tabIndex === 0 ? "Upcoming" : "Past"} Popups
+          </Typography>
         ) : (
           <Box sx={{ position: "relative", mt: 2 }}>
             <IconButton
@@ -351,9 +362,16 @@ const PublicVendorProfile: React.FC<Props> = ({ user }) => {
                     <Typography variant="body2" sx={{ mt: 1 }}>
                       {event.description}
                     </Typography>
-                    {event.Categories?.length > 0 && (
-                      <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: "wrap" }}>
-                        {event.Categories.map((cat) => (
+                    {(event.Categories?.length ||
+                      event.isFree ||
+                      event.isKidFriendly ||
+                      event.isSober) && (
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        sx={{ mt: 1, flexWrap: "wrap" }}
+                      >
+                        {event.Categories?.map((cat) => (
                           <Chip
                             key={cat.name}
                             label={cat.name}
@@ -362,6 +380,27 @@ const PublicVendorProfile: React.FC<Props> = ({ user }) => {
                             sx={{ fontSize: "0.75rem" }}
                           />
                         ))}
+                        {event.isFree && (
+                          <Chip
+                            label="Free"
+                            size="small"
+                            sx={{ fontSize: "0.75rem" }}
+                          />
+                        )}
+                        {event.isKidFriendly && (
+                          <Chip
+                            label="Kid-Friendly"
+                            size="small"
+                            sx={{ fontSize: "0.75rem" }}
+                          />
+                        )}
+                        {event.isSober && (
+                          <Chip
+                            label="Sober"
+                            size="small"
+                            sx={{ fontSize: "0.75rem" }}
+                          />
+                        )}
                       </Stack>
                     )}
                     <Button
@@ -369,9 +408,19 @@ const PublicVendorProfile: React.FC<Props> = ({ user }) => {
                       size="small"
                       startIcon={<VisibilityIcon />}
                       onClick={() => handleOpenModal(event)}
-                      sx={{ mt: 2, borderRadius: 2, textTransform: "none", boxShadow: 1 }}
+                      sx={{
+                        mt: 2,
+                        borderRadius: 2,
+                        textTransform: "none",
+                        boxShadow: 1,
+                        backgroundColor: "#000",
+                        color: "#fff",
+                        "&:hover": {
+                          backgroundColor: "#333",
+                        },
+                      }}
                     >
-                      View Details
+                      Details
                     </Button>
                   </CardContent>
                 </Card>
