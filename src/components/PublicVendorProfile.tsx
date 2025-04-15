@@ -131,24 +131,11 @@ const PublicVendorProfile: React.FC<Props> = ({ user }) => {
       if (!vendorId) return;
       
       try {
-<<<<<<< HEAD
-        setLoading(true);
-        const [eventsRes, vendorRes, imageRes] = await Promise.all([
-          axios.get(`/api/events/vendor/${vendorId}`),
-          axios.get(`/api/vendor/public/${vendorId}`),
-          axios.get(`/api/images/vendorId/${vendorId}`),
-        ]);
-
-        const sortedEvents = eventsRes.data.sort((a: Event, b: Event) => {
-          return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
-        });
-=======
         const res = await axios.get(`/api/events/vendor/${vendorId}`);
         const sortedEvents = res.data.sort(
           (a: Event, b: Event) =>
             new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
         );
->>>>>>> 9e3477a (UPDATE: Follow vendor button)
         setEvents(sortedEvents);
         setVendor(vendorRes.data);
 
@@ -175,10 +162,6 @@ const PublicVendorProfile: React.FC<Props> = ({ user }) => {
       }
     };
 
-<<<<<<< HEAD
-    fetchData();
-    fetchAverageRating();
-=======
     const checkFollowStatus = async () => {
       if (!user) return;
       try {
@@ -198,7 +181,6 @@ const PublicVendorProfile: React.FC<Props> = ({ user }) => {
       setLoading(true);
       setTimeout(() => setLoading(false), 300);
     }
->>>>>>> 9e3477a (UPDATE: Follow vendor button)
   }, [vendorId, user]);
 
   const handleFollowToggle = () => {
@@ -211,6 +193,20 @@ const PublicVendorProfile: React.FC<Props> = ({ user }) => {
       .then(() => setIsFollowing(!isFollowing))
       .catch((err) => console.error("Error toggling follow", err));
   };
+
+  const handleReviewUpdate = () => {
+    fetchData();
+  };
+
+  useEffect(() => {
+    fetchData();
+    if (user) {
+      axios
+        .get(`/users/${user.id}/follows/${vendorId}`)
+        .then((res) => setIsFollowing(res.data.isFollowing))
+        .catch(() => setIsFollowing(false));
+    }
+  }, [vendorId, user]);
 
   const now = new Date();
   const filteredEvents =
