@@ -107,91 +107,24 @@ const PublicVendorProfile: React.FC<Props> = ({ user }) => {
     }
   };
 
-  const fetchAverageRating = async () => {
-    try {
-      const res = await axios.get(`/vendors/${vendorId}/average-rating`);
-      const avg = parseFloat(res.data.averageRating) || 0;
-      const count = parseInt(res.data.reviewCount, 10) || 0;
-      setAvgRating(avg);
-      setReviewCount(count);
-      await fetchReviews();
-    } catch (err) {
-      console.error("Error fetching average rating:", err);
-      setAvgRating(0);
-      setReviewCount(0);
-    }
-  };
-
-  const handleReviewAction = () => {
-    fetchAverageRating();
-  };
-
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!vendorId) return;
-      
-      try {
-        const res = await axios.get(`/api/events/vendor/${vendorId}`);
-        const sortedEvents = res.data.sort(
-          (a: Event, b: Event) =>
-            new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
-        );
-        setEvents(sortedEvents);
-        setVendor(vendorRes.data);
-
-        if (imageRes.data?.length > 0) {
-          setUploadedImage(imageRes.data[0].referenceURL);
-        }
-
-        if (user) {
-          try {
-            const followRes = await axios.get(`/users/${user.id}/follows/${vendorId}`);
-            setIsFollowing(followRes.data.isFollowing);
-          } catch (err) {
-            console.error("Error checking follow status", err);
-            setIsFollowing(false);
-          }
-        }
-      } catch (err) {
-        console.error("Error fetching data:", err);
-        setEvents([]);
-        setVendor(null);
-        setUploadedImage(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const checkFollowStatus = async () => {
-      if (!user) return;
-      try {
-        const res = await axios.get(`/users/${user.id}/follows/${vendorId}`);
-        setIsFollowing(res.data.isFollowing);
-      } catch (err) {
-        console.error("Error checking follow status", err);
-        setIsFollowing(false);
-      }
-    };
-
-    if (vendorId) {
-      fetchVendorEvents();
-      fetchVendorInfo();
-      fetchVendorImage();
-      if (user) checkFollowStatus();
-      setLoading(true);
-      setTimeout(() => setLoading(false), 300);
-    }
-  }, [vendorId, user]);
-
-  const handleFollowToggle = () => {
+  const handleFollowToggle = async () => {
+    console.log("follow unfollow clicked");
     if (!user) return;
+
     const route = isFollowing
-      ? `/users/${user.id}/unfollow/${vendorId}`
-      : `/users/${user.id}/follow/${vendorId}`;
-    axios
-      .post(route)
-      .then(() => setIsFollowing(!isFollowing))
-      .catch((err) => console.error("Error toggling follow", err));
+      ? `/api/users/${user.id}/unfollow/${vendorId}`
+      : `/api/users/${user.id}/follow/${vendorId}`;
+
+    console.log("req", route);
+
+    try {
+      const response = await axios.post(route);
+      console.log("res", response.data);
+
+      setIsFollowing(!isFollowing);
+    } catch (err: any) {
+      console.error("err toggle follow", err?.response?.data || err.message);
+    }
   };
 
   const handleReviewUpdate = () => {
@@ -202,7 +135,7 @@ const PublicVendorProfile: React.FC<Props> = ({ user }) => {
     fetchData();
     if (user) {
       axios
-        .get(`/users/${user.id}/follows/${vendorId}`)
+        .get(`/api/users/${user.id}/follows/${vendorId}`)
         .then((res) => setIsFollowing(res.data.isFollowing))
         .catch(() => setIsFollowing(false));
     }
